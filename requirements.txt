@@ -1,0 +1,14 @@
+jupyterlab
+psycopg
+pandas
+scikit-learn
+psycopg[binary]
+matplotlib
+seaborn
+pyts
+optuna
+torch_geometric
+xgboost
+node2vec
+networkx
+sklearn_utils

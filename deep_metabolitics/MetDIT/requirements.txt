@@ -1,0 +1,13 @@
+opencv-python
+numpy
+pandas
+scikit-image
+scikit-learn
+tqdm
+pyts
+seaborn
+lightgbm
+xgboost
+matplotlib
+plot_metric
+
