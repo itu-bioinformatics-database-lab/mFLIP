@@ -8,6 +8,7 @@ from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     mean_absolute_error,
+    mean_absolute_percentage_error,
     mean_squared_error,
     r2_score,
     root_mean_squared_error,
@@ -25,7 +26,7 @@ def train_one_epoch(model, optimizer, dataloader, logger, fold, epoch):
     epoch_loss = 0
     # Iterate over mini batches
     model.train()
-    for x_train_batch, y_train_batch, _ in dataloader:
+    for x_train_batch, y_train_batch in dataloader:
         optimizer.zero_grad()
         # Forwad Pass
         y_pred = model(x_train_batch)
@@ -59,31 +60,31 @@ def predict(model, dataset):
         # dataloader = torch.utils.data.DataLoader(dataset)
         model.eval()
 
-        factor_list = []
+        # factor_list = []
         y_true_list = []
         y_pred_list = []
 
         with torch.no_grad():
-            for X, y_true, factor in dataloader:
+            for X, y_true in dataloader:
                 y_pred = model(X)
                 if len(y_true) > 1:
-                    factor_list.extend(factor.squeeze().cpu().tolist())
+                    # factor_list.extend(factor.squeeze().cpu().tolist())
                     y_true_list.extend(y_true.squeeze().cpu().tolist())
                     y_pred_list.extend(y_pred.squeeze().cpu().tolist())
                 else:
-                    factor_list.append(factor.squeeze().cpu().tolist())
+                    # factor_list.append(factor.squeeze().cpu().tolist())
                     y_true_list.append(y_true.squeeze().cpu().tolist())
                     y_pred_list.append(y_pred.squeeze().cpu().tolist())
 
-            factor_list = np.array(factor_list)
+            # factor_list = np.array(factor_list)
             y_true_list = np.array(y_true_list)
             y_pred_list = np.array(y_pred_list)
-    return y_true_list, y_pred_list, factor_list
+    return y_true_list, y_pred_list
 
 
 def eval_dataset(model, dataset, logger, fold, running_for, epoch=None):
     start_time = time.time()
-    y_true_list, y_pred_list, factor_list = predict(model, dataset)
+    y_true_list, y_pred_list = predict(model, dataset)
 
     end_time = time.time()
     elapsed_time = end_time - start_time
@@ -97,6 +98,9 @@ def eval_dataset(model, dataset, logger, fold, running_for, epoch=None):
             y_true_list, y_pred_list, multioutput="uniform_average"
         ),
         "mae": mean_absolute_error(
+            y_true_list, y_pred_list, multioutput="uniform_average"
+        ),
+        "mape": mean_absolute_percentage_error(
             y_true_list, y_pred_list, multioutput="uniform_average"
         ),
         "r2": r2_score(y_true_list, y_pred_list, multioutput="uniform_average"),
@@ -114,8 +118,51 @@ def eval_dataset(model, dataset, logger, fold, running_for, epoch=None):
     ):
         metrics[f"r2_{per}"] = per_value
 
+    q_errors = q_error_function(y_true_list, y_pred_list)
+    for per, per_value in zip(
+        percentiles,
+        np.percentile(q_errors, percentiles),
+    ):
+        metrics[f"qerror_{per}"] = per_value
     logger.info(metrics)
     return metrics
+
+
+def q_error_function(y_true, y_pred):
+    """
+    Q-error (quotient error) hesaplar.
+
+    Parameters:
+    -----------
+    y_true : numpy.ndarray
+        Gerçek değerler
+    y_pred : numpy.ndarray
+        Tahmin edilen değerler
+
+    Returns:
+    --------
+    float or numpy.ndarray
+        Her bir örnek için q-error değerleri veya ortalama q-error
+
+    Notes:
+    ------
+    Q-error = max(tahmin/gerçek, gerçek/tahmin)
+    """
+    # Sıfıra bölme hatalarını önlemek için küçük bir epsilon değeri
+    eps = 5
+
+    # Girişleri numpy array'e çevir
+    y_true = np.abs(np.asarray(y_true)) + eps
+    y_pred = np.abs(np.asarray(y_pred)) + eps
+
+    # Q-error hesaplama
+    ratio1 = y_pred / y_true
+    ratio2 = y_true / y_pred
+
+    # Her örnek için maksimum oranı al
+    q_errors = np.abs(np.maximum(ratio1, ratio2))
+
+    return q_errors
 
 
 def train(
@@ -302,6 +349,7 @@ def cls_results(X_train, y_train, X_test, y_test):
     #     ]
     # )
     from sklearn.ensemble import RandomForestClassifier
+    from xgboost import XGBClassifier
 
     # classification_pipeline = Pipeline(
     #     [
@@ -313,8 +361,8 @@ def cls_results(X_train, y_train, X_test, y_test):
     classification_pipeline = Pipeline(
         [
             # ("vect", DictVectorizer(sparse=False)),
-            ("pca", PCA(random_state=43)),
-            ("clf", RandomForestClassifier(random_state=43)),
+            # ("pca", PCA(random_state=43)),
+            ("clf", XGBClassifier(random_state=43)),
         ]
     )
     classification_pipeline.fit(X_train, y_train)
@@ -325,7 +373,25 @@ def cls_results(X_train, y_train, X_test, y_test):
     y_test_pred = classification_pipeline.predict(X_test)
     test_metrics = cls_metrics(y_pred=y_test_pred, y_true=y_test, type="test")
     metrics.update(test_metrics)
-    return metrics
+    
+    
+    xgb_model = classification_pipeline.named_steps["clf"]
+    importances = xgb_model.feature_importances_
+    feature_names = X_train.columns
+    import shap
+    explainer = shap.Explainer(xgb_model)
+    shap_values = explainer(X_train)
+    shap_importance = np.abs(shap_values.values).mean(axis=0)
+    
+    
+    import pandas as pd
+
+    feature_importance_df = pd.DataFrame({
+        "feature": feature_names,
+        "importance": importances,
+        "shap_importance": shap_importance
+    }).sort_values(by="importance", ascending=False)
+    return metrics, feature_importance_df
 
 
 def classification_evaluation(

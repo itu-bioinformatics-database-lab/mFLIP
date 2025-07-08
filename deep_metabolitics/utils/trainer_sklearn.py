@@ -8,6 +8,7 @@ from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     mean_absolute_error,
+    mean_absolute_percentage_error,
     mean_squared_error,
     r2_score,
     root_mean_squared_error,
@@ -51,6 +52,43 @@ def train_one_epoch(model, optimizer, dataloader, logger, fold, epoch):
     return model, optimizer
 
 
+def q_error_function(y_true, y_pred):
+    """
+    Q-error (quotient error) hesaplar.
+
+    Parameters:
+    -----------
+    y_true : numpy.ndarray
+        Gerçek değerler
+    y_pred : numpy.ndarray
+        Tahmin edilen değerler
+
+    Returns:
+    --------
+    float or numpy.ndarray
+        Her bir örnek için q-error değerleri veya ortalama q-error
+
+    Notes:
+    ------
+    Q-error = max(tahmin/gerçek, gerçek/tahmin)
+    """
+    # Sıfıra bölme hatalarını önlemek için küçük bir epsilon değeri
+    eps = 5
+
+    # Girişleri numpy array'e çevir
+    y_true = np.abs(np.asarray(y_true)) + eps
+    y_pred = np.abs(np.asarray(y_pred)) + eps
+
+    # Q-error hesaplama
+    ratio1 = y_pred / y_true
+    ratio2 = y_true / y_pred
+
+    # Her örnek için maksimum oranı al
+    q_errors = np.abs(np.maximum(ratio1, ratio2))
+
+    return q_errors
+
+
 def eval_dataset(model, X, y, logger, fold, running_for, epoch=None):
     start_time = time.time()
 
@@ -66,6 +104,9 @@ def eval_dataset(model, X, y, logger, fold, running_for, epoch=None):
         "epoch": epoch,
         "mse": mean_squared_error(y, y_pred, multioutput="uniform_average"),
         "mae": mean_absolute_error(y, y_pred, multioutput="uniform_average"),
+        "mape": mean_absolute_percentage_error(
+            y, y_pred, multioutput="uniform_average"
+        ),
         "r2": r2_score(y, y_pred, multioutput="uniform_average"),
         "rmse": root_mean_squared_error(y, y_pred, multioutput="uniform_average"),
         "time": elapsed_time,
@@ -78,6 +119,13 @@ def eval_dataset(model, X, y, logger, fold, running_for, epoch=None):
         np.percentile(r2_per_output, percentiles),
     ):
         metrics[f"r2_{per}"] = per_value
+
+    q_errors = q_error_function(y, y_pred)
+    for per, per_value in zip(
+        percentiles,
+        np.percentile(q_errors, percentiles),
+    ):
+        metrics[f"qerror_{per}"] = per_value
 
     logger.info(metrics)
     return metrics

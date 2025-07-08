@@ -12,6 +12,8 @@ from deep_metabolitics.config import (
     synonym_mapping_path,
 )
 
+_loaded_recon3_cobra = None
+
 
 def get_queries(fpath, sep=None):
     content = None
@@ -41,6 +43,12 @@ def load_recon():
     with open(recon_path) as f:
         recon_net = json.load(f)
     return recon_net
+
+
+def load_json(fpath):
+    with open(fpath) as f:
+        data = json.load(f)
+    return data
 
 
 def load_pathway_metabolites_map(is_unique=False):
@@ -91,6 +99,15 @@ def save_network(model, fname, dir=None):
     print(f"SAVED MODEL {fname = }")
 
 
+def load_network(fname, dir=None):
+    print("SAVE NETWORK STARTING")
+    if dir is None:
+        dir = models_dir
+    model = torch.load(dir / fname)
+    print(f"Load MODEL {fname = }")
+    return model
+
+
 def load_pickle(fpath):
     with open(fpath, "rb") as file:
         data = pickle.load(file)
@@ -101,14 +118,21 @@ def save_pickle(data, fname, dir=None):
     if dir is None:
         dir = outputs_dir
     fpath = dir / fname
+    fpath.parent.mkdir(parents=True, exist_ok=True)
     with open(fpath, "wb") as file:
         pickle.dump(data, file)
     print(fpath)
+    return fpath
 
 
 def load_cobra_network(network_model=None):
-    recon_cobra = load_json_model(recon_path)
-    return recon_cobra
+    global _loaded_recon3_cobra
+    if _loaded_recon3_cobra is None:
+        print("Yeni bir nesne oluşturuluyor.")
+        _loaded_recon3_cobra = load_json_model(recon_path)
+    else:
+        print("Önceden yüklenmiş nesne döndürülüyor.")
+    return _loaded_recon3_cobra
 
 
 def load_metabolite_mapping(naming_file="synonym"):

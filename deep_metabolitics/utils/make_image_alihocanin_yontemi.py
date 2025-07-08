@@ -5,13 +5,13 @@ import torch
 from PIL import Image
 
 from deep_metabolitics.config import temp_alihoca_dir
-from deep_metabolitics.data.properties import get_dataset_ids
+from deep_metabolitics.data.properties import get_aycan_dataset_ids
 
 # from deep_metabolitics.utils.make_image import MetditConverter
 from deep_metabolitics.utils.utils import load_pathway_metabolites_map, load_recon
 
 pathway_metabolites_map = load_pathway_metabolites_map(is_unique=True)
-dataset_ids = get_dataset_ids()
+dataset_ids = get_aycan_dataset_ids()
 
 
 def generate_image(row):

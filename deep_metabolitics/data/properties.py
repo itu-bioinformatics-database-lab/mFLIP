@@ -90,9 +90,15 @@ def get_aycan_union_metabolites():
     metabolites = []
     for source in aycan_source_list:
         fpath = aycan_full_data_dir / f"foldchangescaler_{source}.csv"
-        df = pd.read_csv(fpath)
+        df = pd.read_csv(fpath, index_col=0)
         metabolites.extend(df.columns)
     return sorted(list(set(metabolites)))
+
+
+def get_aycan_and_db_union_metabolites():
+    db_metabolites = get_union_metabolites()
+    aycan_metabolites = get_aycan_union_metabolites()
+    return sorted(list(set(db_metabolites + aycan_metabolites)))
 
 
 def get_aycan_pathway_names():
@@ -104,3 +110,54 @@ def get_aycan_pathway_names():
     df = pd.read_csv(fpath, index_col=0)
     pathways = list(df.columns)
     return pathways
+
+
+def get_all_ds_ids(folder_path):
+    fname_list = [
+        fname.replace("fluxminmax_", "").replace(".csv", "")
+        for fname in os.listdir(folder_path)
+        if ("fluxminmax_" in fname) and ("pathwayfluxminmax_" not in fname)
+    ]
+    return fname_list
+
+
+def get_workbench_metabolights_dataset_ids():
+    from deep_metabolitics.config import (
+        work_workbench_metabolights_multiplied_by_factors_dir,
+    )
+    from deep_metabolitics.data.workbench_metabolights_selectedstudies import selected_studies
+
+    ds_ids = get_all_ds_ids(
+        folder_path=work_workbench_metabolights_multiplied_by_factors_dir
+    )
+    ds_ids = [_id for _id in ds_ids if any(sname in _id for sname in selected_studies)]
+
+    _ds_counter = 0
+    for sname in selected_studies:
+        if any(sname in _id for _id in ds_ids):
+            _ds_counter += 1
+
+    print(f"{len(ds_ids) = }", f"{len(selected_studies) = }", f"{_ds_counter = }")
+    return ds_ids
+
+
+def get_workbench_metabolights_union_metabolites():
+    from deep_metabolitics.config import (
+        work_workbench_metabolights_multiplied_by_factors_dir,
+    )
+
+    source_list = get_workbench_metabolights_dataset_ids()
+    metabolites = []
+    for source in source_list:
+        fpath = work_workbench_metabolights_multiplied_by_factors_dir / f"foldchangescaler_{source}.csv"
+        df = pd.read_csv(fpath, index_col=0)
+        metabolites.extend(df.columns)
+    return sorted(list(set(metabolites)))
+
+
+def get_recon_metabolites():
+    from deep_metabolitics.utils.utils import load_recon
+
+    recon_net = load_recon()
+    metabolites = [m["id"] for m in recon_net["metabolites"]]
+    return metabolites
