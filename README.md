@@ -4,7 +4,7 @@
 
 This repository accompanies the publication:
 
-> *[Paper title]*, [Authors]. **BMC Bioinformatics**, [Year]. DOI: [DOI]
+> mFLIP: Metabolic Flux Interval Prediction, Baris Can, Sadi Celik, and Ali Cakmak. **BMC Bioinformatics**, 2026. DOI: 10.5281/zenodo.19581885
 
 ---
 
