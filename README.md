@@ -270,7 +270,7 @@ If you use mFLIP in your research, please cite:
   author  = {Baris Can, Sadi Celik, and Ali Cakmak},
   journal = {BMC Bioinformatics},
   year    = {2026},
-  doi     = {}
+  doi     = {10.5281/zenodo.19581885}
 }
 ```
 
