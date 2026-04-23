@@ -4,7 +4,7 @@
 
 This repository accompanies the publication:
 
-> mFLIP: Metabolic Flux Interval Prediction, Baris Can, Sadi Celik, and Ali Cakmak. **BMC Bioinformatics**, 2026. DOI: 10.5281/zenodo.19581885
+> mFLIP: Metabolic Flux Interval Prediction, Baris Can, Sadi Celik, and Ali Cakmak. **BMC Bioinformatics**, 2026. DOI: to be added after publication
 
 ---
 
@@ -270,7 +270,26 @@ If you use mFLIP in your research, please cite:
   author  = {Baris Can, Sadi Celik, and Ali Cakmak},
   journal = {BMC Bioinformatics},
   year    = {2026},
-  doi     = {10.5281/zenodo.19581885}
+  doi     = {TO_BE_ADDED}
+}
+```
+
+```bibtex
+@software{mflip_zenodo,
+  author       = {Barış Can},
+  title        = {bariscann/mFLIP: mFLIP v1.0.0},
+  month        = apr,
+  year         = 2026,
+  publisher    = {Zenodo},
+  version      = {v1.0.0},
+  doi          = {10.5281/zenodo.19581885},
+  url          = {https://doi.org/10.5281/zenodo.19581885},
+  swhid        = {swh:1:dir:2cb641a4e1a4a09a102bfac23014c2656d324a98
+                   ;origin=https://doi.org/10.5281/zenodo.19581884;vi
+                   sit=swh:1:snp:e932a2828d6130ba8cbe46c84ad96f16a951
+                   15a0;anchor=swh:1:rel:52eb21e9c9ce5a3c88e7000335d5
+                   93566e47fe74;path=bariscann-mFLIP-311564e
+                  },
 }
 ```
 
